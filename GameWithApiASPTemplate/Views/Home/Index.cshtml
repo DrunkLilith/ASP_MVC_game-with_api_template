@@ -1,9 +1,9 @@
-﻿@{
-    ViewData["Title"] = "Главная";
+п»ї@{
+    ViewData["Title"] = "Р“Р»Р°РІРЅР°СЏ";
 }
 
 <div class="container mt-4">
-    <h1 class="mb-4">Управление API</h1>
+    <h1 class="mb-4">РЈРїСЂР°РІР»РµРЅРёРµ API</h1>
 
     @if (ViewData["Message"] != null)
     {
@@ -16,16 +16,16 @@
 
     <div class="row g-4">
 
-        <!-- Карточка аккаунта -->
+        <!-- РљР°СЂС‚РѕС‡РєР° Р°РєРєР°СѓРЅС‚Р° -->
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header bg-primary text-white">
-                    <h5>Аккаунт</h5>
+                    <h5>РђРєРєР°СѓРЅС‚</h5>
                 </div>
                 <div class="card-body">
                     @if (!(bool)ViewData["IsLoggedIn"])
                     {
-                        <!-- Форма входа -->
+                        <!-- Р¤РѕСЂРјР° РІС…РѕРґР° -->
                         <form asp-controller="Account" asp-action="Login" method="post">
                             <div class="row g-3">
                                 <div class="col-md-5">
@@ -33,54 +33,54 @@
                                     <input type="email" name="email" class="form-control" required />
                                 </div>
                                 <div class="col-md-5">
-                                    <label class="form-label">Пароль</label>
+                                    <label class="form-label">РџР°СЂРѕР»СЊ</label>
                                     <input type="password" name="password" class="form-control" required />
                                 </div>
                                 <div class="col-md-2 d-flex align-items-end">
-                                    <button type="submit" class="btn btn-primary w-100">Войти</button>
+                                    <button type="submit" class="btn btn-primary w-100">Р’РѕР№С‚Рё</button>
                                 </div>
                             </div>
                         </form>
                     }
                     else
                     {
-                        <!-- Информация после входа -->
+                        <!-- Р�РЅС„РѕСЂРјР°С†РёСЏ РїРѕСЃР»Рµ РІС…РѕРґР° -->
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <strong>Текущий User ID:</strong>
+                                <strong>РўРµРєСѓС‰РёР№ User ID:</strong>
                                 <span class="fs-5 text-primary">@ViewData["CurrentUserId"]</span>
                             </div>
                             <a asp-controller="Account" asp-action="Logout"
-                               class="btn btn-outline-danger">Выйти</a>
+                               class="btn btn-outline-danger">Р’С‹Р№С‚Рё</a>
                         </div>
                     }
                 </div>
             </div>
         </div>
 
-        <!-- Получить баллы -->
+        <!-- РџРѕР»СѓС‡РёС‚СЊ Р±Р°Р»Р»С‹ -->
         <div class="col-md-6">
             <div class="card h-100">
                 <div class="card-header bg-info text-white">
-                    <h5>1. Получить баллы игрока</h5>
+                    <h5>1. РџРѕР»СѓС‡РёС‚СЊ Р±Р°Р»Р»С‹ РёРіСЂРѕРєР°</h5>
                 </div>
                 <div class="card-body">
                     @if (!(bool)ViewData["IsLoggedIn"])
                     {
                         <div class="alert alert-warning py-2">
-                            <small>Войдите в систему, чтобы получить баллы игрока.</small>
+                            <small>Р’РѕР№РґРёС‚Рµ РІ СЃРёСЃС‚РµРјСѓ, С‡С‚РѕР±С‹ РїРѕР»СѓС‡РёС‚СЊ Р±Р°Р»Р»С‹ РёРіСЂРѕРєР°.</small>
                         </div>
                     }
                     else
                     {
                         <p class="text-muted small">
-                            Узнать количество баллов у игрока по его User ID.
+                            РЈР·РЅР°С‚СЊ РєРѕР»РёС‡РµСЃС‚РІРѕ Р±Р°Р»Р»РѕРІ Сѓ РёРіСЂРѕРєР° РїРѕ РµРіРѕ User ID.
                         </p>
                         <form asp-action="GetPoints" method="post">
                             <div class="input-group">
                                 <input type="text" name="playerId" class="form-control"
-                                       placeholder="ID игрока" value="@ViewData["CurrentUserId"]" required />
-                                <button type="submit" class="btn btn-info">Получить баллы</button>
+                                       placeholder="ID РёРіСЂРѕРєР°" value="@ViewData["CurrentUserId"]" required />
+                                <button type="submit" class="btn btn-info">РџРѕР»СѓС‡РёС‚СЊ Р±Р°Р»Р»С‹</button>
                             </div>
                         </form>
                     }
@@ -88,102 +88,44 @@
             </div>
         </div>
 
-        <!-- Добавить баллы -->
+        <!-- Р”РѕР±Р°РІРёС‚СЊ Р±Р°Р»Р»С‹ -->
         <div class="col-md-6">
             <div class="card h-100">
                 <div class="card-header bg-success text-white">
-                    <h5>2. Добавить баллы игроку</h5>
+                    <h5>2. Р”РѕР±Р°РІРёС‚СЊ Р±Р°Р»Р»С‹ РёРіСЂРѕРєСѓ</h5>
                 </div>
                 <div class="card-body">
                     @if (!(bool)ViewData["IsLoggedIn"])
                     {
                         <div class="alert alert-warning py-2">
-                            <small>Войдите в систему, чтобы добавлять баллы.</small>
+                            <small>Р’РѕР№РґРёС‚Рµ РІ СЃРёСЃС‚РµРјСѓ, С‡С‚РѕР±С‹ РґРѕР±Р°РІР»СЏС‚СЊ Р±Р°Р»Р»С‹.</small>
                         </div>
                     }
                     else
                     {
                         <p class="text-muted small">
-                            Добавляет баллы игроку в указанную игру. Game ID можно скопировать ниже.
+                            Р”РѕР±Р°РІР»СЏРµС‚ Р±Р°Р»Р»С‹ РёРіСЂРѕРєСѓ РІ СѓРєР°Р·Р°РЅРЅСѓСЋ РёРіСЂСѓ. Game ID РјРѕР¶РЅРѕ СЃРєРѕРїРёСЂРѕРІР°С‚СЊ РЅРёР¶Рµ.
                         </p>
                         <form asp-action="AddPoints" method="post">
+                            
                             <div class="mb-3">
-                                <label class="form-label">Game ID</label>
-                                <input type="text" name="gameId" class="form-control"
-                                       placeholder="Введите Game ID" required />
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">ID игрока</label>
+                                <label class="form-label">ID РёРіСЂРѕРєР°</label>
                                 <input type="text" name="playerId" class="form-control"
                                        value="@ViewData["CurrentUserId"]" required />
                             </div>
                             <div class="mb-3">
-                                <label class="form-label">Количество баллов</label>
+                                <label class="form-label">РљРѕР»РёС‡РµСЃС‚РІРѕ Р±Р°Р»Р»РѕРІ</label>
                                 <input type="number" name="amount" class="form-control" min="1" value="10" required />
                             </div>
-                            <button type="submit" class="btn btn-success w-100">Добавить баллы</button>
+                            <button type="submit" class="btn btn-success w-100">Р”РѕР±Р°РІРёС‚СЊ Р±Р°Р»Р»С‹</button>
                         </form>
                     }
                 </div>
             </div>
         </div>
 
-        <!-- Игры разработчика -->
-        <div class="col-md-12">
-            <div class="card">
-                <div class="card-header bg-secondary text-white">
-                    <h5>3. Игры разработчика (справочная информация)</h5>
-                </div>
-                <div class="card-body">
-                    <p class="text-muted">
-                        Здесь отображаются игры разработчика (привязанные к используемому API-ключу).<br>
-                        Это не игры текущего пользователя, а игры владельца ключа.
-                    </p>
-
-
-                    <form asp-action="GetDevGames" method="post" class="mb-3">
-                        <button type="submit" class="btn btn-outline-secondary">Обновить список игр</button>
-                    </form>
-
-
-                    @if ((ViewData["Games"] as Game[] ?? Array.Empty<Game>()).Length > 0)
-                    {
-                        <ul class="list-group">
-                            @foreach (var game in (ViewData["Games"] as Game[] ?? Array.Empty<Game>()))
-                            {
-                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <strong>@game.gameTitle</strong><br>
-                                        <small class="text-muted">Game ID: <code>@game.gameId</code></small>
-                                    </div>
-                                    <button type="button" class="btn btn-sm btn-outline-primary copy-btn"
-                                            data-gameid="@game.gameId">
-                                        Копировать ID
-                                    </button>
-                                </li>
-                            }
-                        </ul>
-                    }
-                    else
-                    {
-                        <p class="text-muted">Список игр пуст. Нажмите кнопку «Обновить список игр».</p>
-                    }
-                </div>
-            </div>
-        </div>
+        <!-- Р�РіСЂС‹ СЂР°Р·СЂР°Р±РѕС‚С‡РёРєР° -->
+        
 
     </div>
 </div>
-
-<script>
-    document.querySelectorAll('.copy-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const gameId = btn.getAttribute('data-gameid');
-            navigator.clipboard.writeText(gameId).then(() => {
-                const original = btn.textContent;
-                btn.textContent = '✓ Скопировано';
-                setTimeout(() => btn.textContent = 'Копировать ID', 2000);
-            });
-        });
-    });
-</script>

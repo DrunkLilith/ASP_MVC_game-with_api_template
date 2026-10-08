@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
+
 using GameWithApiASPTemplate;
+
 using System.Text.Json;
 
 namespace GameWithApiASPTemplate.Controllers
@@ -15,31 +17,30 @@ namespace GameWithApiASPTemplate.Controllers
 
         private string? CurrentUserId => Request.Cookies["UserId"];
 
-        public async Task<IActionResult> Index()
+        // РРіСЂРѕРІР°СЏ СЃРµСЃСЃРёСЏ РїРѕСЂС‚Р°Р»Р°: iframe РїРµСЂРµРґР°С‘С‚ ?session=<id>&token=<hmac>
+        private int? GameSessionId
+        {
+            get
+            {
+                var raw = Request.Query["session"].ToString();
+                return int.TryParse(raw, out var id) ? id : (int?)null;
+            }
+        }
+
+        private string? GameSessionToken => Request.Query["token"].ToString();
+
+        public IActionResult Index()
         {
             var userId = CurrentUserId;
             ViewData["IsLoggedIn"] = !string.IsNullOrEmpty(userId);
             ViewData["CurrentUserId"] = userId;
+            ViewData["GameSessionId"] = GameSessionId;
 
             if (TempData["Message"] != null)
                 ViewData["Message"] = TempData["Message"]?.ToString();
 
             if (TempData["Error"] != null)
                 ViewData["Error"] = TempData["Error"]?.ToString();
-
-            if (TempData["Games"] != null)
-                ViewData["Games"] = JsonSerializer.Deserialize<Game[]>(TempData["Games"]?.ToString() ?? "[]");
-
-            //try
-            //{
-            //    var games = await _api.GetMyGames() ?? Array.Empty<Game>();
-            //    ViewData["Games"] = games;
-            //}
-            //catch (Exception ex)
-            //{
-            //    ViewData["Error"] = $"Ошибка загрузки игр: {ex.Message}";
-            //    ViewData["Games"] = Array.Empty<Game>();
-            //}
 
             return View();
         }
@@ -52,47 +53,32 @@ namespace GameWithApiASPTemplate.Controllers
             try
             {
                 var result = await _api.GetPlayerPoints(playerId);
-                TempData["Message"] = $"Баллы игрока {playerId}: {result?.points ?? 0}";
+                TempData["Message"] = $"Р‘Р°Р»Р»С‹ РёРіСЂРѕРєР° {playerId}: {result?.points ?? 0}";
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Ошибка получения баллов: {ex.Message}";
-            }
-
-            return RedirectToAction("Index");
-        }
-        public async Task<IActionResult> GetDevGames()
-        {
-            try
-            {
-                var games = await _api.GetMyGames() ?? [];
-                TempData["Games"] = JsonSerializer.Serialize(games);
-                TempData["Message"] = "Список игр успешно обновлён";
-            }
-            catch (Exception ex)
-            {
-                ViewData["Error"] = $"Ошибка загрузки игр: {ex.Message}";
+                TempData["Error"] = $"РћС€РёР±РєР° РїРѕР»СѓС‡РµРЅРёСЏ Р±Р°Р»Р»РѕРІ: {ex.Message}";
             }
 
             return RedirectToAction("Index");
         }
 
-        public async Task<IActionResult> AddPoints(string gameId, string playerId, int amount)
+        public async Task<IActionResult> AddPoints(string playerId, int amount)
         {
-            if (string.IsNullOrWhiteSpace(gameId) || string.IsNullOrWhiteSpace(playerId) || amount <= 0)
+            if (string.IsNullOrWhiteSpace(playerId) || amount <= 0)
             {
-                TempData["Error"] = "Заполните все поля корректно";
+                TempData["Error"] = "РќРµРєРѕСЂСЂРµРєС‚РЅС‹Рµ РґР°РЅРЅС‹Рµ РґР»СЏ РЅР°С‡РёСЃР»РµРЅРёСЏ";
                 return RedirectToAction("Index");
             }
 
             try
             {
-                await _api.AddPointsAsync(playerId, gameId, amount);
-                TempData["Message"] = $"Успешно добавлено {amount} баллов игроку {playerId} в игру с ID {gameId}!";
+                var result = await _api.AddScoreAsync(GameSessionId ?? 0, GameSessionToken, amount);
+                TempData["Message"] = $"РќР°С‡РёСЃР»РµРЅРѕ {amount} Р±Р°Р»Р»РѕРІ РёРіСЂРѕРєСѓ {playerId}! РС‚РѕРі: {result?.newTotalPoints}";
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Ошибка добавления баллов: {ex.Message}";
+                TempData["Error"] = $"РћС€РёР±РєР° РЅР°С‡РёСЃР»РµРЅРёСЏ Р±Р°Р»Р»РѕРІ: {ex.Message}";
             }
 
             return RedirectToAction("Index");
