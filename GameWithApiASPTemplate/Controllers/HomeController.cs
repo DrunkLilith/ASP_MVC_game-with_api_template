@@ -1,9 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 
-using GameWithApiASPTemplate;
-
-using System.Text.Json;
-
 namespace GameWithApiASPTemplate.Controllers
 {
     public class HomeController : Controller
@@ -15,22 +11,25 @@ namespace GameWithApiASPTemplate.Controllers
             _api = api;
         }
 
-        private string? CurrentUserId => Request.Cookies["UserId"];
+        private string? CurrentUserId => HttpContext.Session.GetString("user_id");
 
         // Игровая сессия портала: iframe передаёт ?session=<id>&token=<hmac>
         private int? GameSessionId
         {
             get
             {
-                var raw = Request.Query["session"].ToString();
-                return int.TryParse(raw, out var id) ? id : (int?)null;
+                return HttpContext.Session.GetInt32("game_session_id");
             }
         }
 
-        private string? GameSessionToken => Request.Query["token"].ToString();
+        private string? GameSessionToken =>
+            HttpContext.Session.GetString("game_session_token");
 
-        public IActionResult Index()
+        public IActionResult Index(
+            [FromQuery(Name = "session")] int? gameSessionId,
+            [FromQuery] string? token)
         {
+            CaptureGameSession(gameSessionId, token);
             var userId = CurrentUserId;
             ViewData["IsLoggedIn"] = !string.IsNullOrEmpty(userId);
             ViewData["CurrentUserId"] = userId;
@@ -45,6 +44,17 @@ namespace GameWithApiASPTemplate.Controllers
             return View();
         }
 
+        [HttpGet("/start")]
+        public IActionResult Start(
+            [FromQuery(Name = "session")] int? gameSessionId,
+            [FromQuery] string? token)
+        {
+            CaptureGameSession(gameSessionId, token);
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> GetPoints(string playerId)
         {
             if (string.IsNullOrEmpty(CurrentUserId))
@@ -63,9 +73,11 @@ namespace GameWithApiASPTemplate.Controllers
             return RedirectToAction("Index");
         }
 
-        public async Task<IActionResult> AddPoints(string playerId, int amount)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddPoints(int amount)
         {
-            if (string.IsNullOrWhiteSpace(playerId) || amount <= 0)
+            if (amount <= 0)
             {
                 TempData["Error"] = "Некорректные данные для начисления";
                 return RedirectToAction("Index");
@@ -74,7 +86,7 @@ namespace GameWithApiASPTemplate.Controllers
             try
             {
                 var result = await _api.AddScoreAsync(GameSessionId ?? 0, GameSessionToken, amount);
-                TempData["Message"] = $"Начислено {amount} баллов игроку {playerId}! Итог: {result?.newTotalPoints}";
+                TempData["Message"] = $"Начислено {amount} баллов. Итог: {result?.newTotalPoints}";
             }
             catch (Exception ex)
             {
@@ -82,6 +94,19 @@ namespace GameWithApiASPTemplate.Controllers
             }
 
             return RedirectToAction("Index");
+        }
+
+        private void CaptureGameSession(int? gameSessionId, string? token)
+        {
+            if (gameSessionId is not > 0)
+                return;
+
+            HttpContext.Session.SetInt32("game_session_id", gameSessionId.Value);
+
+            if (string.IsNullOrWhiteSpace(token))
+                HttpContext.Session.Remove("game_session_token");
+            else
+                HttpContext.Session.SetString("game_session_token", token);
         }
     }
 }

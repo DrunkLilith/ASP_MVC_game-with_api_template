@@ -1,9 +1,11 @@
-п»ї@{
-    ViewData["Title"] = "Р“Р»Р°РІРЅР°СЏ";
+@{
+    ViewData["Title"] = "API игры";
+    var isLoggedIn = ViewData["IsLoggedIn"] is true;
+    var hasGameSession = ViewData["GameSessionId"] is int;
 }
 
 <div class="container mt-4">
-    <h1 class="mb-4">РЈРїСЂР°РІР»РµРЅРёРµ API</h1>
+    <h1 class="mb-4">Шаблон игры LingvoGameOs</h1>
 
     @if (ViewData["Message"] != null)
     {
@@ -15,72 +17,86 @@
     }
 
     <div class="row g-4">
-
-        <!-- РљР°СЂС‚РѕС‡РєР° Р°РєРєР°СѓРЅС‚Р° -->
-        <div class="col-md-12">
+        <div class="col-12">
             <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5>РђРєРєР°СѓРЅС‚</h5>
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Игровая сессия портала</h5>
                 </div>
                 <div class="card-body">
-                    @if (!(bool)ViewData["IsLoggedIn"])
+                    @if (hasGameSession)
                     {
-                        <!-- Р¤РѕСЂРјР° РІС…РѕРґР° -->
+                        <span class="badge bg-success">Подключена</span>
+                        <span class="ms-2">ID: @ViewData["GameSessionId"]</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning text-dark">Не подключена</span>
+                        <p class="mb-0 mt-2 text-muted">
+                            Для начисления баллов запустите игру с портала через
+                            <code>/start?session=...&amp;token=...</code>.
+                        </p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Аккаунт</h5>
+                </div>
+                <div class="card-body">
+                    @if (!isLoggedIn)
+                    {
                         <form asp-controller="Account" asp-action="Login" method="post">
                             <div class="row g-3">
                                 <div class="col-md-5">
-                                    <label class="form-label">Email</label>
-                                    <input type="email" name="email" class="form-control" required />
+                                    <label class="form-label" for="email">Email</label>
+                                    <input id="email" type="email" name="email" class="form-control" required />
                                 </div>
                                 <div class="col-md-5">
-                                    <label class="form-label">РџР°СЂРѕР»СЊ</label>
-                                    <input type="password" name="password" class="form-control" required />
+                                    <label class="form-label" for="password">Пароль</label>
+                                    <input id="password" type="password" name="password" class="form-control" required />
                                 </div>
                                 <div class="col-md-2 d-flex align-items-end">
-                                    <button type="submit" class="btn btn-primary w-100">Р’РѕР№С‚Рё</button>
+                                    <button type="submit" class="btn btn-primary w-100">Войти</button>
                                 </div>
                             </div>
                         </form>
                     }
                     else
                     {
-                        <!-- Р�РЅС„РѕСЂРјР°С†РёСЏ РїРѕСЃР»Рµ РІС…РѕРґР° -->
-                        <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex justify-content-between align-items-center gap-3">
                             <div>
-                                <strong>РўРµРєСѓС‰РёР№ User ID:</strong>
+                                <strong>Текущий User ID:</strong>
                                 <span class="fs-5 text-primary">@ViewData["CurrentUserId"]</span>
                             </div>
-                            <a asp-controller="Account" asp-action="Logout"
-                               class="btn btn-outline-danger">Р’С‹Р№С‚Рё</a>
+                            <form asp-controller="Account" asp-action="Logout" method="post">
+                                <button type="submit" class="btn btn-outline-danger">Выйти</button>
+                            </form>
                         </div>
                     }
                 </div>
             </div>
         </div>
 
-        <!-- РџРѕР»СѓС‡РёС‚СЊ Р±Р°Р»Р»С‹ -->
         <div class="col-md-6">
             <div class="card h-100">
                 <div class="card-header bg-info text-white">
-                    <h5>1. РџРѕР»СѓС‡РёС‚СЊ Р±Р°Р»Р»С‹ РёРіСЂРѕРєР°</h5>
+                    <h5 class="mb-0">Получить баллы аккаунта</h5>
                 </div>
                 <div class="card-body">
-                    @if (!(bool)ViewData["IsLoggedIn"])
+                    @if (!isLoggedIn)
                     {
-                        <div class="alert alert-warning py-2">
-                            <small>Р’РѕР№РґРёС‚Рµ РІ СЃРёСЃС‚РµРјСѓ, С‡С‚РѕР±С‹ РїРѕР»СѓС‡РёС‚СЊ Р±Р°Р»Р»С‹ РёРіСЂРѕРєР°.</small>
-                        </div>
+                        <div class="alert alert-warning mb-0">Сначала войдите в аккаунт.</div>
                     }
                     else
                     {
-                        <p class="text-muted small">
-                            РЈР·РЅР°С‚СЊ РєРѕР»РёС‡РµСЃС‚РІРѕ Р±Р°Р»Р»РѕРІ Сѓ РёРіСЂРѕРєР° РїРѕ РµРіРѕ User ID.
-                        </p>
                         <form asp-action="GetPoints" method="post">
                             <div class="input-group">
                                 <input type="text" name="playerId" class="form-control"
-                                       placeholder="ID РёРіСЂРѕРєР°" value="@ViewData["CurrentUserId"]" required />
-                                <button type="submit" class="btn btn-info">РџРѕР»СѓС‡РёС‚СЊ Р±Р°Р»Р»С‹</button>
+                                       value="@ViewData["CurrentUserId"]" required />
+                                <button type="submit" class="btn btn-info">Получить</button>
                             </div>
                         </form>
                     }
@@ -88,44 +104,27 @@
             </div>
         </div>
 
-        <!-- Р”РѕР±Р°РІРёС‚СЊ Р±Р°Р»Р»С‹ -->
         <div class="col-md-6">
             <div class="card h-100">
                 <div class="card-header bg-success text-white">
-                    <h5>2. Р”РѕР±Р°РІРёС‚СЊ Р±Р°Р»Р»С‹ РёРіСЂРѕРєСѓ</h5>
+                    <h5 class="mb-0">Отправить результат игры</h5>
                 </div>
                 <div class="card-body">
-                    @if (!(bool)ViewData["IsLoggedIn"])
+                    @if (!hasGameSession)
                     {
-                        <div class="alert alert-warning py-2">
-                            <small>Р’РѕР№РґРёС‚Рµ РІ СЃРёСЃС‚РµРјСѓ, С‡С‚РѕР±С‹ РґРѕР±Р°РІР»СЏС‚СЊ Р±Р°Р»Р»С‹.</small>
-                        </div>
+                        <div class="alert alert-warning mb-0">Нет игровой сессии портала.</div>
                     }
                     else
                     {
-                        <p class="text-muted small">
-                            Р”РѕР±Р°РІР»СЏРµС‚ Р±Р°Р»Р»С‹ РёРіСЂРѕРєСѓ РІ СѓРєР°Р·Р°РЅРЅСѓСЋ РёРіСЂСѓ. Game ID РјРѕР¶РЅРѕ СЃРєРѕРїРёСЂРѕРІР°С‚СЊ РЅРёР¶Рµ.
-                        </p>
                         <form asp-action="AddPoints" method="post">
-                            
-                            <div class="mb-3">
-                                <label class="form-label">ID РёРіСЂРѕРєР°</label>
-                                <input type="text" name="playerId" class="form-control"
-                                       value="@ViewData["CurrentUserId"]" required />
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label">РљРѕР»РёС‡РµСЃС‚РІРѕ Р±Р°Р»Р»РѕРІ</label>
-                                <input type="number" name="amount" class="form-control" min="1" value="10" required />
-                            </div>
-                            <button type="submit" class="btn btn-success w-100">Р”РѕР±Р°РІРёС‚СЊ Р±Р°Р»Р»С‹</button>
+                            <label class="form-label" for="amount">Количество баллов</label>
+                            <input id="amount" type="number" name="amount" class="form-control mb-3"
+                                   min="1" value="10" required />
+                            <button type="submit" class="btn btn-success w-100">Отправить результат</button>
                         </form>
                     }
                 </div>
             </div>
         </div>
-
-        <!-- Р�РіСЂС‹ СЂР°Р·СЂР°Р±РѕС‚С‡РёРєР° -->
-        
-
     </div>
 </div>

@@ -1,4 +1,3 @@
-using System;
 using System.Text;
 using System.Text.Json;
 
@@ -7,15 +6,27 @@ namespace GameWithApiASPTemplate
     public class API
     {
         private readonly HttpClient _httpClient;
-
-        public API()
+        private static readonly JsonSerializerOptions JsonOptions = new()
         {
-            // адрес API портала Рудзынг.рф (переопределяется переменной окружения)
-            string baseUrl = Environment.GetEnvironmentVariable("LINGVO_API_URL")
-                ?? "http://game.рудзынг.рф";
+            PropertyNameCaseInsensitive = true
+        };
 
-            this._httpClient = new HttpClient();
-            this._httpClient.BaseAddress = new System.Uri(baseUrl);
+        public API(HttpClient httpClient)
+        {
+            _httpClient = httpClient;
+            _httpClient.BaseAddress = BuildApiBaseAddress();
+            _httpClient.Timeout = TimeSpan.FromSeconds(10);
+        }
+
+        private static Uri BuildApiBaseAddress()
+        {
+            var baseUrl = (Environment.GetEnvironmentVariable("LINGVO_API_URL")
+                ?? "http://game.рудзынг.рф/api").TrimEnd('/');
+
+            if (!baseUrl.EndsWith("/api", StringComparison.OrdinalIgnoreCase))
+                baseUrl += "/api";
+
+            return new Uri(baseUrl + "/", UriKind.Absolute);
         }
 
         public async Task<LoginResponse?> Login(string email, string password)
@@ -24,24 +35,25 @@ namespace GameWithApiASPTemplate
             var json = JsonSerializer.Serialize(loginData);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await _httpClient.PostAsync("/api/account/login", content);
+            var response = await _httpClient.PostAsync("account/login", content);
             var responseContent = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
                 throw new Exception($"Ошибка входа: {responseContent}");
 
-            return JsonSerializer.Deserialize<LoginResponse>(responseContent);
+            return JsonSerializer.Deserialize<LoginResponse>(responseContent, JsonOptions);
         }
 
         public async Task<PointsResponse?> GetPlayerPoints(string playerId)
         {
-            var response = await _httpClient.GetAsync($"/api/users/{playerId}/points");
+            var response = await _httpClient.GetAsync(
+                $"users/{Uri.EscapeDataString(playerId)}/points");
             var responseContent = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
                 throw new Exception($"Ошибка получения баллов: {responseContent}");
 
-            return JsonSerializer.Deserialize<PointsResponse>(responseContent);
+            return JsonSerializer.Deserialize<PointsResponse>(responseContent, JsonOptions);
         }
 
         /// <summary>
@@ -53,18 +65,22 @@ namespace GameWithApiASPTemplate
         {
             if (gameSessionId <= 0)
                 throw new Exception("Игра запущена не с портала: сессия не выдана.");
+            if (string.IsNullOrWhiteSpace(token))
+                throw new Exception("Портал не передал токен игровой сессии.");
+            if (amount <= 0)
+                throw new Exception("Количество баллов должно быть положительным.");
 
             var scoreData = new { gameSessionId = gameSessionId, score = amount, token = token };
             var json = JsonSerializer.Serialize(scoreData);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await _httpClient.PostAsync("/api/score", content);
+            var response = await _httpClient.PostAsync("score", content);
             var responseContent = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
                 throw new Exception($"Ошибка начисления баллов: {responseContent}");
 
-            return JsonSerializer.Deserialize<ScoreResponse>(responseContent);
+            return JsonSerializer.Deserialize<ScoreResponse>(responseContent, JsonOptions);
         }
     }
 
@@ -75,12 +91,12 @@ namespace GameWithApiASPTemplate
 
     public class ScoreResponse
     {
-        public string userId { get; set; }
+        public string userId { get; set; } = string.Empty;
         public int newTotalPoints { get; set; }
     }
 
     public class LoginResponse
     {
-        public string userId { get; set; }
+        public string userId { get; set; } = string.Empty;
     }
 }

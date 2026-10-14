@@ -5,7 +5,7 @@ namespace GameWithApiASPTemplate.Controllers
 {
     public class AccountController : Controller
     {
-        private string? CurrentUserId => Request.Cookies["UserId"];
+        private string? CurrentUserId => HttpContext.Session.GetString("user_id");
 
         private readonly API _api;
 
@@ -16,7 +16,7 @@ namespace GameWithApiASPTemplate.Controllers
 
         public IActionResult Login()
         {
-            if (Request.Cookies.ContainsKey("UserId"))
+            if (!string.IsNullOrEmpty(CurrentUserId))
                 return RedirectToAction("Index", "Home");
 
             return View();
@@ -28,7 +28,7 @@ namespace GameWithApiASPTemplate.Controllers
         {
             if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
             {
-                ViewData["Error"] = "Введите email и пароль";
+                TempData["Error"] = "Введите email и пароль";
                 return RedirectToAction("Index", "Home");
             }
 
@@ -38,27 +38,24 @@ namespace GameWithApiASPTemplate.Controllers
 
                 if (response?.userId != null)
                 {
-                    Response.Cookies.Append("UserId", response.userId, new CookieOptions
-                    {
-                        HttpOnly = true,
-                        IsEssential = true,
-                        Expires = DateTimeOffset.UtcNow.AddHours(8)
-                    });
+                    HttpContext.Session.SetString("user_id", response.userId);
 
                     return RedirectToAction("Index", "Home");
                 }
             }
             catch (Exception ex)
             {
-                ViewData["Error"] = $"Ошибка входа: {ex.Message}";
+                TempData["Error"] = $"Ошибка входа: {ex.Message}";
             }
 
             return RedirectToAction("Index", "Home");
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public IActionResult Logout()
         {
-            Response.Cookies.Delete("UserId");
+            HttpContext.Session.Remove("user_id");
             return RedirectToAction("Index", "Home");
         }
 
