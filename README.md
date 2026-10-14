@@ -47,3 +47,23 @@ expose:
 ```
 
 `ports` для игры не нужен: портал проксирует контейнер по `/games/my-game`.
+
+## Docker
+
+Для автономного локального запуска создайте рабочий `.env` и поднимите игру
+одной командой:
+
+```powershell
+Copy-Item .env.example .env
+docker compose up --build
+```
+
+Игра будет доступна на `http://localhost:8080`. Порт можно изменить через
+`GAME_HOST_PORT` в `.env`. `compose.yaml` намеренно очищает `GAME_PATH_BASE`,
+поскольку при автономном запуске перед игрой нет reverse proxy портала.
+
+В составе LingvoGameOs используйте этот же `Dockerfile`, но не публикуйте порт
+на хост: передайте контейнеру `GAME_PATH_BASE=/games/<slug>`, уникальный
+`GAME_COOKIE_NAME`, реальный `LINGVO_GAME_ID` и внутренний URL API. Именованный
+том в `compose.yaml` сохраняет Data Protection keys и не сбрасывает сессии при
+пересоздании контейнера.

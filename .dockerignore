@@ -1,0 +1,11 @@
+.git/
+.github/
+.vs/
+.env
+.env.*
+**/bin/
+**/obj/
+**/publish/
+*.user
+*.log
+README.md
