@@ -1,102 +1,101 @@
 using System.Text;
 using System.Text.Json;
 
-namespace GameWithApiASPTemplate
+namespace GameWithApiASPTemplate;
+
+public sealed class API
 {
-    public class API
+    readonly HttpClient _httpClient;
+    static readonly JsonSerializerOptions JsonOptions = new()
     {
-        private readonly HttpClient _httpClient;
-        private static readonly JsonSerializerOptions JsonOptions = new()
-        {
-            PropertyNameCaseInsensitive = true
-        };
+        PropertyNameCaseInsensitive = true
+    };
 
-        public API(HttpClient httpClient)
-        {
-            _httpClient = httpClient;
-            _httpClient.BaseAddress = BuildApiBaseAddress();
-            _httpClient.Timeout = TimeSpan.FromSeconds(10);
-        }
-
-        private static Uri BuildApiBaseAddress()
-        {
-            var baseUrl = (Environment.GetEnvironmentVariable("LINGVO_API_URL")
-                ?? "http://game.рудзынг.рф/api").TrimEnd('/');
-
-            if (!baseUrl.EndsWith("/api", StringComparison.OrdinalIgnoreCase))
-                baseUrl += "/api";
-
-            return new Uri(baseUrl + "/", UriKind.Absolute);
-        }
-
-        public async Task<LoginResponse?> Login(string email, string password)
-        {
-            var loginData = new { email = email, password = password };
-            var json = JsonSerializer.Serialize(loginData);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var response = await _httpClient.PostAsync("account/login", content);
-            var responseContent = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-                throw new Exception($"Ошибка входа: {responseContent}");
-
-            return JsonSerializer.Deserialize<LoginResponse>(responseContent, JsonOptions);
-        }
-
-        public async Task<PointsResponse?> GetPlayerPoints(string playerId)
-        {
-            var response = await _httpClient.GetAsync(
-                $"users/{Uri.EscapeDataString(playerId)}/points");
-            var responseContent = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-                throw new Exception($"Ошибка получения баллов: {responseContent}");
-
-            return JsonSerializer.Deserialize<PointsResponse>(responseContent, JsonOptions);
-        }
-
-        /// <summary>
-        /// Начисление баллов через игровую сессию портала.
-        /// gameSessionId и token приходят в query (?session=...&token=...),
-        /// когда игра запущена в iframe портала Рудзынг.рф.
-        /// </summary>
-        public async Task<ScoreResponse?> AddScoreAsync(int gameSessionId, string? token, int amount)
-        {
-            if (gameSessionId <= 0)
-                throw new Exception("Игра запущена не с портала: сессия не выдана.");
-            if (string.IsNullOrWhiteSpace(token))
-                throw new Exception("Портал не передал токен игровой сессии.");
-            if (amount <= 0)
-                throw new Exception("Количество баллов должно быть положительным.");
-
-            var scoreData = new { gameSessionId = gameSessionId, score = amount, token = token };
-            var json = JsonSerializer.Serialize(scoreData);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-            var response = await _httpClient.PostAsync("score", content);
-            var responseContent = await response.Content.ReadAsStringAsync();
-
-            if (!response.IsSuccessStatusCode)
-                throw new Exception($"Ошибка начисления баллов: {responseContent}");
-
-            return JsonSerializer.Deserialize<ScoreResponse>(responseContent, JsonOptions);
-        }
+    public API(HttpClient httpClient)
+    {
+        _httpClient = httpClient;
+        _httpClient.BaseAddress = BuildApiBaseAddress();
+        _httpClient.Timeout = TimeSpan.FromSeconds(10);
     }
 
-    public class PointsResponse
+    static Uri BuildApiBaseAddress()
     {
-        public int points { get; set; }
+        var baseUrl = (Environment.GetEnvironmentVariable("LINGVO_API_URL")
+            ?? "http://game.рудзынг.рф/api").TrimEnd('/');
+
+        if (!baseUrl.EndsWith("/api", StringComparison.OrdinalIgnoreCase))
+            baseUrl += "/api";
+
+        return new Uri(baseUrl + "/", UriKind.Absolute);
     }
 
-    public class ScoreResponse
+    public async Task<GameSessionResponse> ResolveGameSessionAsync(
+        int gameSessionId,
+        string? token)
     {
-        public string userId { get; set; } = string.Empty;
-        public int newTotalPoints { get; set; }
+        if (gameSessionId <= 0 || string.IsNullOrWhiteSpace(token))
+            throw new InvalidOperationException("Портал не передал игровую сессию и токен.");
+
+        var configuredGameId = Environment.GetEnvironmentVariable("LINGVO_GAME_ID");
+        if (!int.TryParse(configuredGameId, out var expectedGameId) || expectedGameId <= 0)
+            throw new InvalidOperationException("LINGVO_GAME_ID не настроен для этой игры.");
+
+        using var content = new StringContent(
+            JsonSerializer.Serialize(new { gameSessionId, token }),
+            Encoding.UTF8,
+            "application/json");
+        using var response = await _httpClient.PostAsync("game/session/resolve", content);
+        var responseContent = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException($"Игровая сессия отклонена: {responseContent}");
+
+        var result = JsonSerializer.Deserialize<GameSessionResponse>(responseContent, JsonOptions)
+            ?? throw new InvalidOperationException("Портал вернул пустой ответ игровой сессии.");
+        if (!result.valid || string.IsNullOrWhiteSpace(result.userId))
+            throw new InvalidOperationException("Портал вернул некорректную игровую сессию.");
+        if (result.gameId != expectedGameId)
+            throw new InvalidOperationException("Игровая сессия выдана для другой игры.");
+
+        return result;
     }
 
-    public class LoginResponse
+    public async Task<ScoreResponse> AddScoreAsync(
+        int gameSessionId,
+        string? token,
+        int amount)
     {
-        public string userId { get; set; } = string.Empty;
+        if (gameSessionId <= 0 || string.IsNullOrWhiteSpace(token))
+            throw new InvalidOperationException("Игра запущена не с портала: сессия не выдана.");
+        if (amount <= 0)
+            throw new ArgumentOutOfRangeException(nameof(amount), "Количество баллов должно быть положительным.");
+
+        using var content = new StringContent(
+            JsonSerializer.Serialize(new { gameSessionId, score = amount, token }),
+            Encoding.UTF8,
+            "application/json");
+        using var response = await _httpClient.PostAsync("score", content);
+        var responseContent = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+            throw new InvalidOperationException($"Ошибка начисления баллов: {responseContent}");
+
+        return JsonSerializer.Deserialize<ScoreResponse>(responseContent, JsonOptions)
+            ?? throw new InvalidOperationException("Портал вернул пустой ответ начисления баллов.");
     }
+}
+
+public sealed class GameSessionResponse
+{
+    public bool valid { get; set; }
+    public int gameId { get; set; }
+    public string userId { get; set; } = string.Empty;
+    public string userName { get; set; } = string.Empty;
+    public int totalUserPoints { get; set; }
+}
+
+public sealed class ScoreResponse
+{
+    public string userId { get; set; } = string.Empty;
+    public int newTotalPoints { get; set; }
 }

@@ -1,7 +1,7 @@
 @{
     ViewData["Title"] = "API игры";
-    var isLoggedIn = ViewData["IsLoggedIn"] is true;
     var hasGameSession = ViewData["GameSessionId"] is int;
+    var userName = ViewData["PortalUserName"]?.ToString();
 }
 
 <div class="container mt-4">
@@ -25,15 +25,17 @@
                 <div class="card-body">
                     @if (hasGameSession)
                     {
-                        <span class="badge bg-success">Подключена</span>
-                        <span class="ms-2">ID: @ViewData["GameSessionId"]</span>
+                        <span class="badge bg-success">Подтверждена</span>
+                        <span class="ms-2">Игрок: <strong>@userName</strong></span>
+                        <span class="ms-2">Баллы: <strong>@ViewData["PortalTotalPoints"]</strong></span>
                     }
                     else
                     {
                         <span class="badge bg-warning text-dark">Не подключена</span>
                         <p class="mb-0 mt-2 text-muted">
-                            Для начисления баллов запустите игру с портала через
+                            Запустите игру из LingvoGameOs через
                             <code>/start?session=...&amp;token=...</code>.
+                            Отдельная форма входа игре не нужна.
                         </p>
                     }
                 </div>
@@ -42,84 +44,20 @@
 
         <div class="col-12">
             <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Аккаунт</h5>
-                </div>
-                <div class="card-body">
-                    @if (!isLoggedIn)
-                    {
-                        <form asp-controller="Account" asp-action="Login" method="post">
-                            <div class="row g-3">
-                                <div class="col-md-5">
-                                    <label class="form-label" for="email">Email</label>
-                                    <input id="email" type="email" name="email" class="form-control" required />
-                                </div>
-                                <div class="col-md-5">
-                                    <label class="form-label" for="password">Пароль</label>
-                                    <input id="password" type="password" name="password" class="form-control" required />
-                                </div>
-                                <div class="col-md-2 d-flex align-items-end">
-                                    <button type="submit" class="btn btn-primary w-100">Войти</button>
-                                </div>
-                            </div>
-                        </form>
-                    }
-                    else
-                    {
-                        <div class="d-flex justify-content-between align-items-center gap-3">
-                            <div>
-                                <strong>Текущий User ID:</strong>
-                                <span class="fs-5 text-primary">@ViewData["CurrentUserId"]</span>
-                            </div>
-                            <form asp-controller="Account" asp-action="Logout" method="post">
-                                <button type="submit" class="btn btn-outline-danger">Выйти</button>
-                            </form>
-                        </div>
-                    }
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0">Получить баллы аккаунта</h5>
-                </div>
-                <div class="card-body">
-                    @if (!isLoggedIn)
-                    {
-                        <div class="alert alert-warning mb-0">Сначала войдите в аккаунт.</div>
-                    }
-                    else
-                    {
-                        <form asp-action="GetPoints" method="post">
-                            <div class="input-group">
-                                <input type="text" name="playerId" class="form-control"
-                                       value="@ViewData["CurrentUserId"]" required />
-                                <button type="submit" class="btn btn-info">Получить</button>
-                            </div>
-                        </form>
-                    }
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6">
-            <div class="card h-100">
                 <div class="card-header bg-success text-white">
-                    <h5 class="mb-0">Отправить результат игры</h5>
+                    <h5 class="mb-0">Отправить итог партии</h5>
                 </div>
                 <div class="card-body">
                     @if (!hasGameSession)
                     {
-                        <div class="alert alert-warning mb-0">Нет игровой сессии портала.</div>
+                        <div class="alert alert-warning mb-0">Нет подтверждённой игровой сессии портала.</div>
                     }
                     else
                     {
                         <form asp-action="AddPoints" method="post">
                             <label class="form-label" for="amount">Количество баллов</label>
                             <input id="amount" type="number" name="amount" class="form-control mb-3"
-                                   min="1" value="10" required />
+                                   min="1" max="1000" value="10" required />
                             <button type="submit" class="btn btn-success w-100">Отправить результат</button>
                         </form>
                     }

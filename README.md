@@ -3,6 +3,8 @@
 Шаблон поддерживает актуальный контракт портала:
 
 - вход через `/start?session=<id>&token=<hmac>`;
+- проверку сессии через `POST /api/game/session/resolve` и привязку к `LINGVO_GAME_ID`;
+- профиль пользователя портала без отдельной формы логина внутри игры;
 - сохранение игровой сессии между запросами;
 - отправку результата в `POST /api/score`;
 - публикацию под `/games/<slug>` без отдельного внешнего порта;
@@ -20,6 +22,7 @@ Docker-сети и не выполняет лишний HTTPS-redirect.
 
 ```powershell
 $env:LINGVO_API_URL = "http://localhost:5001/api"
+$env:LINGVO_GAME_ID = "123" # реальный ID игры в БД портала
 $env:GAME_PATH_BASE = "/games/my-game"
 $env:GAME_COOKIE_NAME = "lingvogameos_my_game_session"
 $env:ASPNETCORE_URLS = "http://localhost:8080"
@@ -36,6 +39,7 @@ dotnet run --project .\GameWithApiASPTemplate
 environment:
   ASPNETCORE_URLS: http://+:8080
   LINGVO_API_URL: http://api:8080/api
+  LINGVO_GAME_ID: "123"
   GAME_PATH_BASE: /games/my-game
   GAME_COOKIE_NAME: lingvogameos_my_game_session
 expose:
